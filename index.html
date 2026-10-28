@@ -1,0 +1,2159 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TechVanta - Campus-Wide Enterprise Automated Attendance & Monitoring System</title>
+  <meta name="description" content="Campus-wide automated multi-department attendance monitoring system with face-first anti-seat-shuffle tracking, dual-verification windows, and instant multi-party SMS/Email dispatchers." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#fef2f2',
+              100: '#fee2e2',
+              500: '#ef4444',
+              600: '#dc2626',
+              700: '#b91c1c',
+              800: '#991b1b',
+              900: '#7f1d1d',
+              950: '#450a0a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.3);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(156, 163, 175, 0.5);
+    }
+    @keyframes scanline {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(800%); }
+    }
+    .scanner-line {
+      animation: scanline 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+    @keyframes radar-sweep {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .radar-beam {
+      animation: radar-sweep 4s linear infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased selection:bg-red-600 selection:text-white min-h-screen">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-md w-full pointer-events-none"></div>
+
+  <!-- Enterprise Header Bar -->
+  <header class="sticky top-0 z-40 w-full backdrop-blur-xl border-b border-slate-800/80 bg-slate-950/85">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between gap-4 h-16">
+        <!-- Brand & Campus Hub -->
+        <div class="flex items-center gap-3 shrink-0">
+          <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-rose-700 text-white shadow-lg shadow-red-600/30">
+            <i data-lucide="building-2" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-bold tracking-tight text-white">
+                Tech<span class="text-red-500">Vanta</span>
+              </span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-red-950/90 text-red-400 border border-red-800/80 font-bold tracking-wider">
+                CAMPUS-WIDE COMMAND CENTER
+              </span>
+            </div>
+            <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
+              <span>6 Academic Departments</span>
+              <span class="text-slate-600">•</span>
+              <span class="text-emerald-400 font-mono font-medium">11 Active Sections Tracked</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Campus-Wide Health Status Strip -->
+        <div class="hidden xl:flex items-center gap-6 text-xs text-slate-400">
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span>Campus CCTV Grid: <strong class="text-slate-200">11 Classrooms Online</strong></span>
+          </div>
+          <span class="text-slate-700">|</span>
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="scan-face" class="w-3.5 h-3.5 text-red-400"></i>
+            <span>Biometric Liveness: <strong class="text-slate-200 font-mono">3D Infrared Active</strong></span>
+          </div>
+          <span class="text-slate-700">|</span>
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="shuffle" class="w-3.5 h-3.5 text-purple-400"></i>
+            <span>Anti-Seat-Shuffle: <strong class="text-purple-300 font-mono">100% Face-First Priority</strong></span>
+          </div>
+        </div>
+
+        <!-- Navigation Views & Quick Actions -->
+        <div class="flex items-center gap-2">
+          <!-- View Switcher Tabs -->
+          <div class="bg-slate-900 p-1 rounded-xl border border-slate-800 flex items-center text-xs font-semibold">
+            <button onclick="setViewMode('campus')" id="nav-btn-campus" class="px-3 py-1.5 rounded-lg bg-red-600 text-white transition-all cursor-pointer flex items-center gap-1.5">
+              <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+              <span>Campus Overview</span>
+            </button>
+            <button onclick="setViewMode('classroom')" id="nav-btn-classroom" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer flex items-center gap-1.5">
+              <i data-lucide="video" class="w-3.5 h-3.5"></i>
+              <span>Classroom Deep Dive</span>
+            </button>
+          </div>
+
+          <button onclick="openAddStudentModal()" class="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors cursor-pointer">
+            <i data-lucide="user-plus" class="w-3.5 h-3.5 text-red-400"></i>
+            <span>Enroll Student</span>
+          </button>
+
+          <button onclick="toggleTheme()" class="p-2 text-slate-400 hover:text-white rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 transition-colors cursor-pointer" title="Toggle Theme">
+            <i id="theme-icon" data-lucide="sun" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Global Campus Simulation Command Bar -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-950/70 via-slate-900 to-slate-950 border border-red-900/40 p-4 sm:p-5 shadow-xl">
+      <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div class="flex items-start gap-3.5">
+          <div class="p-2.5 rounded-xl bg-red-900/40 border border-red-700/50 text-red-400 shrink-0 mt-0.5">
+            <i data-lucide="sliders" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm sm:text-base font-bold text-white tracking-tight">
+                Campus-Wide Automated Operations & Escalation Controls
+              </h2>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950/90 text-emerald-400 border border-emerald-800/80">
+                ACTIVE SEMESTER S2-2026
+              </span>
+            </div>
+            <p class="text-xs text-slate-300 mt-1 max-w-3xl leading-relaxed">
+              Execute campus-wide biometric scans across all 6 departments and 11 classrooms. Automatically trigger first 10-minute entrance scans, last 10-minute continuous presence sweeps, instant parent SMS/Email for absentees, and emergency HOD notifications for faculty no-shows.
+            </p>
+          </div>
+        </div>
+
+        <!-- Global Simulation Action Buttons -->
+        <div class="flex flex-wrap items-center gap-2 self-stretch lg:self-auto shrink-0">
+          <button onclick="runCampusWideScan()" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg shadow-red-950/50 transition-all cursor-pointer">
+            <i data-lucide="play" class="w-4 h-4"></i>
+            <span>Campus First 10M Scan</span>
+          </button>
+          <button onclick="runCampusWideSweep()" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all cursor-pointer">
+            <i data-lucide="check-check" class="w-4 h-4 text-sky-400"></i>
+            <span>Campus Last 10M Sweep</span>
+          </button>
+          <button onclick="simulateCampusFacultyNoShow()" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-red-300 bg-red-950/80 hover:bg-red-900 border border-red-800/90 rounded-xl transition-all cursor-pointer">
+            <i data-lucide="alert-octagon" class="w-4 h-4 text-red-400"></i>
+            <span>Simulate Faculty No-Show</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Campus-Wide KPI Header Strip -->
+    <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      <!-- Total Enrolled -->
+      <div class="bg-slate-900/80 rounded-xl p-3.5 border border-slate-800/90 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between text-slate-400 text-xs">
+          <span>Campus Strength</span>
+          <i data-lucide="graduation-cap" class="w-4 h-4 text-slate-500"></i>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="global-total-students" class="text-2xl font-bold font-mono text-white">422</span>
+          <span class="text-[11px] text-slate-400">Enrolled</span>
+        </div>
+        <div class="mt-1 text-[11px] text-slate-400">
+          6 Academic Departments
+        </div>
+      </div>
+
+      <!-- Campus Present Rate -->
+      <div class="bg-slate-900/80 rounded-xl p-3.5 border border-slate-800/90 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between text-slate-400 text-xs">
+          <span>Attendance Rate</span>
+          <i data-lucide="percent" class="w-4 h-4 text-emerald-400"></i>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="global-present-pct" class="text-2xl font-bold font-mono text-emerald-400">93.6%</span>
+          <span id="global-present-count" class="text-xs font-mono text-slate-400">(395 / 422)</span>
+        </div>
+        <div class="mt-1 text-[11px] text-emerald-400/90 flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span>Face-Biometric Verified</span>
+        </div>
+      </div>
+
+      <!-- Active Classrooms -->
+      <div class="bg-slate-900/80 rounded-xl p-3.5 border border-slate-800/90 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between text-slate-400 text-xs">
+          <span>Active Classes</span>
+          <i data-lucide="video" class="w-4 h-4 text-sky-400"></i>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="global-active-classes" class="text-2xl font-bold font-mono text-white">11</span>
+          <span class="text-[11px] text-slate-400">/ 11 Live</span>
+        </div>
+        <div class="mt-1 text-[11px] text-slate-400">
+          RTSP CCTV Feed Sync
+        </div>
+      </div>
+
+      <!-- Anti-Seat-Shuffles Auto-Resolved -->
+      <div class="bg-purple-950/30 rounded-xl p-3.5 border border-purple-800/60 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between text-purple-300 text-xs font-medium">
+          <span>Seat Shuffles</span>
+          <i data-lucide="shuffle" class="w-4 h-4 text-purple-400"></i>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="global-shuffles-count" class="text-2xl font-bold font-mono text-purple-300">14</span>
+          <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-900/80 text-purple-200">AUTO-RESOLVED</span>
+        </div>
+        <div class="mt-1 text-[11px] text-purple-400/90">
+          0 False Proxies Issued
+        </div>
+      </div>
+
+      <!-- Faculty No-Shows / Alerts -->
+      <div class="bg-red-950/30 rounded-xl p-3.5 border border-red-800/60 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between text-red-300 text-xs font-medium">
+          <span>Faculty No-Shows</span>
+          <i data-lucide="alert-octagon" class="w-4 h-4 text-red-400"></i>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="global-faculty-alerts" class="text-2xl font-bold font-mono text-red-400">1</span>
+          <span class="text-[11px] text-red-400">Class Alerted</span>
+        </div>
+        <div class="mt-1 text-[11px] text-slate-400">
+          HOD Escalation Triggered
+        </div>
+      </div>
+
+      <!-- Campus Outbox Dispatched -->
+      <div class="bg-slate-900/80 rounded-xl p-3.5 border border-slate-800/90 shadow-sm relative overflow-hidden">
+        <div class="flex items-center justify-between text-slate-400 text-xs">
+          <span>Outbox Messages</span>
+          <i data-lucide="send" class="w-4 h-4 text-amber-400"></i>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="global-outbox-count" class="text-2xl font-bold font-mono text-amber-400">42</span>
+          <span class="text-[11px] text-slate-400">SMS / Email</span>
+        </div>
+        <div class="mt-1 text-[11px] text-slate-400">
+          Parents, Faculty & HOD
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 1: GLOBAL CAMPUS DASHBOARD (All Departments & Classes) -->
+    <div id="view-campus-container" class="space-y-6">
+      <!-- Section Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg">
+        <div>
+          <div class="flex items-center gap-2">
+            <div class="p-1.5 rounded-lg bg-red-950/80 border border-red-800 text-red-400">
+              <i data-lucide="grid" class="w-4 h-4"></i>
+            </div>
+            <h3 class="text-base font-bold text-white tracking-wide">
+              Academic Department Directory & Live Classroom Matrix
+            </h3>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">
+            Click on any classroom card below to drill down directly into its live CCTV camera feed, 7-period timetable, and 2D Anti-Seat-Shuffle desk layout.
+          </p>
+        </div>
+
+        <!-- Department Filter Pills -->
+        <div class="flex flex-wrap items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+          <button onclick="filterDepartmentView('ALL')" id="dept-filter-ALL" class="px-2.5 py-1 rounded-lg font-medium bg-red-600 text-white transition-colors cursor-pointer">
+            All Departments (6)
+          </button>
+          <button onclick="filterDepartmentView('CSE')" id="dept-filter-CSE" class="px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition-colors cursor-pointer">
+            CSE
+          </button>
+          <button onclick="filterDepartmentView('IT')" id="dept-filter-IT" class="px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition-colors cursor-pointer">
+            IT
+          </button>
+          <button onclick="filterDepartmentView('ECE')" id="dept-filter-ECE" class="px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition-colors cursor-pointer">
+            ECE
+          </button>
+          <button onclick="filterDepartmentView('AIDS')" id="dept-filter-AIDS" class="px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition-colors cursor-pointer">
+            AI & DS
+          </button>
+          <button onclick="filterDepartmentView('MECH')" id="dept-filter-MECH" class="px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition-colors cursor-pointer">
+            Mech
+          </button>
+          <button onclick="filterDepartmentView('CIVIL')" id="dept-filter-CIVIL" class="px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition-colors cursor-pointer">
+            Civil
+          </button>
+        </div>
+      </div>
+
+      <!-- Department Cards Container (Rendered dynamically) -->
+      <div id="departments-list-container" class="space-y-6">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- VIEW 2: CLASSROOM DRILL-DOWN DEEP DIVE (CCTV Cam, Timetable, 2D Grid) -->
+    <div id="view-classroom-container" class="hidden space-y-6">
+
+      <!-- Breadcrumbs & Quick Back Navigation -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-lg">
+        <div class="flex items-center gap-2 text-xs">
+          <button onclick="setViewMode('campus')" class="text-slate-400 hover:text-white transition-colors flex items-center gap-1 font-semibold cursor-pointer">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+            <span>Campus Overview</span>
+          </button>
+          <span class="text-slate-600">/</span>
+          <span id="breadcrumb-dept" class="text-slate-400 font-medium">Computer Science & Engineering</span>
+          <span class="text-slate-600">/</span>
+          <span id="breadcrumb-class" class="text-red-400 font-bold font-mono px-2 py-0.5 rounded bg-red-950/80 border border-red-800/80">CSE-A</span>
+        </div>
+
+        <!-- Quick Classroom Switcher Dropdown -->
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-slate-400 font-medium">Switch Classroom:</label>
+          <select id="quick-class-switcher" onchange="selectClassroom(this.value)" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-red-500 font-mono cursor-pointer">
+            <!-- Populated by JS -->
+          </select>
+        </div>
+      </div>
+
+      <!-- 7-Period Timetable Carousel for Selected Classroom -->
+      <section class="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-bold text-white tracking-wide uppercase flex items-center gap-1.5">
+                <i data-lucide="calendar-days" class="w-4 h-4 text-red-500"></i>
+                <span id="class-timetable-header">CSE-A Dynamic 7-Period Timetable</span>
+              </h3>
+              <span class="text-xs text-slate-400">• Period-by-period independent dual-verification</span>
+            </div>
+          </div>
+
+          <!-- Section Controls -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="runEntranceScanSingleClass()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors cursor-pointer">
+              <i data-lucide="play" class="w-3.5 h-3.5 text-emerald-400"></i>
+              <span>First 10M Scan</span>
+            </button>
+            <button onclick="runDepartureSweepSingleClass()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors cursor-pointer">
+              <i data-lucide="user-check" class="w-3.5 h-3.5 text-sky-400"></i>
+              <span>Last 10M Sweep</span>
+            </button>
+            <button onclick="simulateFacultyNoShowSingleClass()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-300 hover:text-white bg-red-950/60 hover:bg-red-900 border border-red-800/80 rounded-lg transition-colors cursor-pointer">
+              <i data-lucide="alert-octagon" class="w-3.5 h-3.5 text-red-400"></i>
+              <span>Faculty No-Show (Alert HOD)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 7-Period Buttons Strip -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2" id="periods-strip-container">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Period Timeline Status Indicator -->
+        <div class="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-red-400 text-sm">
+              <span id="active-period-badge">P1</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span id="active-period-subject" class="font-bold text-white text-sm">CS8501: Distributed Systems</span>
+                <span id="active-period-room" class="text-xs font-mono text-slate-400 px-2 py-0.5 rounded bg-slate-900 border border-slate-800">Hall 302</span>
+              </div>
+              <div class="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                <span>Faculty: <strong id="active-period-faculty-name" class="text-slate-300">Prof. Dr. V. Sundaramurthy</strong></span>
+                <span>•</span>
+                <span id="active-period-timeline-status" class="text-emerald-400 font-medium">Entrance Scan Window (0-10m) Active</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dual Verification Progress Bar -->
+          <div class="w-full md:w-80 space-y-1.5">
+            <div class="flex justify-between text-[11px] font-mono">
+              <span class="text-emerald-400 font-bold">First 10M Scan</span>
+              <span class="text-slate-400">Core Lecture (30m)</span>
+              <span class="text-sky-400 font-bold">Last 10M Sweep</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2 flex overflow-hidden">
+              <div id="timeline-bar-first" class="h-full bg-emerald-500 w-1/3 transition-all"></div>
+              <div id="timeline-bar-core" class="h-full bg-slate-700 w-1/3 transition-all"></div>
+              <div id="timeline-bar-last" class="h-full bg-slate-800 w-1/3 transition-all"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+              <span>09:00 - 09:10</span>
+              <span>09:10 - 09:40</span>
+              <span>09:40 - 09:50</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Split Layout: Live CCTV Camera Stream & 2D Desk Matrix -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT: Live Biometric Camera Stream (7 Cols) -->
+        <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg flex flex-col justify-between">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div>
+                <h3 class="text-sm font-bold text-white tracking-wide uppercase flex items-center gap-1.5">
+                  <i data-lucide="video" class="w-4 h-4 text-red-500"></i>
+                  <span id="cctv-stream-title">Live RTSP Cam Stream - Hall 302</span>
+                </h3>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/60">
+                128-D Cosine &ge; 0.88
+              </span>
+            </div>
+
+            <!-- Video Viewport / Canvas Overlay -->
+            <div class="relative w-full aspect-video rounded-xl bg-slate-950 border border-slate-800 overflow-hidden shadow-2xl flex items-center justify-center">
+              <!-- CCTV grid background -->
+              <div class="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-40"></div>
+              <div class="absolute inset-0 pointer-events-none opacity-20 border-b border-slate-700" style="background: linear-gradient(180deg, rgba(30,41,59,0.3) 0%, rgba(15,23,42,0.8) 100%);"></div>
+
+              <!-- Animated Laser Scanline -->
+              <div class="scanner-line absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent shadow-[0_0_15px_#dc2626] z-10 opacity-70"></div>
+
+              <!-- Live HUD Info -->
+              <div class="absolute top-3 left-3 z-20 flex items-center gap-2 font-mono text-[10px] text-slate-400 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded border border-slate-800">
+                <span class="text-red-400 font-bold">REC ●</span>
+                <span id="cctv-cam-code">CAM-CSE-A01</span>
+                <span>•</span>
+                <span id="hud-live-time">09:05:14 AM</span>
+              </div>
+
+              <div class="absolute top-3 right-3 z-20 flex items-center gap-2 font-mono text-[10px] text-slate-300 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded border border-slate-800">
+                <i data-lucide="crosshair" class="w-3.5 h-3.5 text-red-500"></i>
+                <span id="cctv-tracking-count">Faces Tracked</span>
+              </div>
+
+              <!-- Face Tracking Bounding Boxes Overlay -->
+              <div id="cctv-faces-overlay" class="absolute inset-0 z-20 p-4">
+                <!-- Rendered by JS -->
+              </div>
+
+              <!-- Real-time Alert Banner inside Camera -->
+              <div id="cctv-alert-banner" class="hidden absolute bottom-3 inset-x-3 z-30 p-2.5 rounded-lg bg-slate-950/95 border backdrop-blur-md text-xs transition-all flex items-center justify-between">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+            <!-- Camera Controls & Actions -->
+          <div class="mt-4 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <button onclick="scanCurrentClassFaces()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-500 rounded-lg shadow-md shadow-red-900/40 transition-colors cursor-pointer">
+                <i data-lucide="scan" class="w-3.5 h-3.5"></i>
+                <span>Re-Scan Classroom Faces</span>
+              </button>
+              <button onclick="simulateClassSeatSwap()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-300 bg-purple-950/80 hover:bg-purple-900/90 border border-purple-800/80 rounded-lg transition-colors cursor-pointer">
+                <i data-lucide="shuffle" class="w-3.5 h-3.5"></i>
+                <span>Swap Students at Desks</span>
+              </button>
+              <button onclick="simulatePhotoProxySpoof()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-300 bg-red-950/80 hover:bg-red-900/90 border border-red-800/80 rounded-lg transition-colors cursor-pointer">
+                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-red-400"></i>
+                <span>Simulate Photo Proxy</span>
+              </button>
+            </div>
+
+            <div class="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+              <span class="inline-block w-2 h-2 rounded-full bg-purple-400"></span>
+              <span>Purple: Seat Shuffled, Face Verified</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Interactive 2D Classroom Desk Matrix (5 Cols) -->
+        <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3 class="text-sm font-bold text-white tracking-wide uppercase flex items-center gap-1.5">
+                  <i data-lucide="layout-grid" class="w-4 h-4 text-purple-400"></i>
+                  <span>2D Classroom Desk Matrix</span>
+                </h3>
+                <p class="text-[11px] text-slate-400">Click any 2 desks to swap students and test anti-seat-shuffle logic</p>
+              </div>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
+                PODIUM FRONT
+              </span>
+            </div>
+
+            <!-- Instructor Podium Bar -->
+            <div class="w-full py-1.5 px-3 rounded-lg bg-slate-950 border border-slate-800 text-center text-[10px] font-mono text-slate-400 mb-3 flex items-center justify-center gap-2">
+              <i data-lucide="presentation" class="w-3.5 h-3.5 text-red-400"></i>
+              <span>INSTRUCTOR PODIUM & FISHEYE BIOMETRIC SENSOR</span>
+            </div>
+
+            <!-- 4x4 Desk Grid -->
+            <div id="classroom-desks-grid" class="grid grid-cols-4 gap-2">
+              <!-- Rendered by JS -->
+            </div>
+
+            <!-- Grid Legend -->
+            <div class="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-[11px] text-slate-400 gap-2">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded bg-emerald-500/80"></span>
+                <span>Assigned Desk Match</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded bg-purple-500/80"></span>
+                <span>Swapped Seat (Resolved)</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded bg-red-500/80"></span>
+                <span>Proxy Fraud</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded bg-slate-800"></span>
+                <span>Absent / Empty</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 p-3 rounded-xl bg-purple-950/20 border border-purple-900/40 text-xs text-purple-300 flex items-start gap-2.5">
+            <i data-lucide="info" class="w-4 h-4 text-purple-400 shrink-0 mt-0.5"></i>
+            <div>
+              <strong class="text-white">Face-First Verification Active:</strong> If a student moves to another desk, TechVanta matches their facial vector with their registered biometric hash. Attendance is credited to that student; the expected occupant is never mistakenly recorded.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Student Biometric Roster for Selected Classroom -->
+      <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-bold text-white tracking-wide uppercase flex items-center gap-1.5">
+                <i data-lucide="badge-check" class="w-4 h-4 text-emerald-400"></i>
+                <span id="roster-table-title">Student Attendance & Face Confidence Roster</span>
+              </h3>
+              <span id="roster-count-label" class="text-xs text-slate-400 font-mono"></span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Live vector confidence scores, assigned desk vs detected seat, and instant parent SMS triggers</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Search -->
+            <div class="relative">
+              <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400"></i>
+              <input type="text" id="roster-search" oninput="handleRosterSearch(this.value)" placeholder="Search name, roll no, desk..." class="bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-red-500 w-48 sm:w-60" />
+            </div>
+
+            <!-- Status Filter -->
+            <select id="roster-filter-select" onchange="handleRosterFilterChange(this.value)" class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-red-500 font-mono cursor-pointer">
+              <option value="all">All Students</option>
+              <option value="present">Face Verified Present</option>
+              <option value="shuffled">Seat Shuffled (Auto-Resolved)</option>
+              <option value="proxy">Proxy Spoofs</option>
+              <option value="low">Low Attendance (&lt;75%)</option>
+              <option value="absent">Absent (Alerts Sent)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Student Table -->
+        <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/90 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-4">Student Profile</th>
+                <th class="py-3 px-4">Roll Number</th>
+                <th class="py-3 px-4">Assigned Desk</th>
+                <th class="py-3 px-4">Detected Desk</th>
+                <th class="py-3 px-4">Face Match Confidence</th>
+                <th class="py-3 px-4">Anti-Shuffle Status</th>
+                <th class="py-3 px-4">Overall %</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="student-roster-body" class="divide-y divide-slate-800/60 font-mono text-[11px]">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Campus-Wide Automated Outbox Ledger (SMS / Email Logs across all departments) -->
+    <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 rounded-lg bg-red-950/80 border border-red-800 text-red-400">
+            <i data-lucide="send" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white tracking-wide uppercase">
+              Campus-Wide Multi-Channel Automated Outbox Ledger
+            </h3>
+            <p class="text-[11px] text-slate-400">Live SMS & Email dispatches sent across all 6 departments to Parents, Students, Faculty, and HODs</p>
+          </div>
+        </div>
+
+        <!-- Outbox Filter Tabs -->
+        <div class="flex flex-wrap items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+          <button onclick="filterOutbox('all')" id="outbox-filter-all" class="px-2.5 py-1 rounded-lg font-medium transition-colors bg-red-600 text-white cursor-pointer">
+            All Outbox (<span id="count-outbox-all">0</span>)
+          </button>
+          <button onclick="filterOutbox('HOD')" id="outbox-filter-HOD" class="px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition-colors cursor-pointer">
+            HOD Escalations
+          </button>
+          <button onclick="filterOutbox('Parent')" id="outbox-filter-Parent" class="px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition-colors cursor-pointer">
+            Parent SMS
+          </button>
+          <button onclick="filterOutbox('ShuffleAudit')" id="outbox-filter-ShuffleAudit" class="px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition-colors cursor-pointer">
+            Anti-Shuffle Audits
+          </button>
+          <button onclick="filterOutbox('ProxyAlert')" id="outbox-filter-ProxyAlert" class="px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition-colors cursor-pointer">
+            Proxy Fraud
+          </button>
+        </div>
+      </div>
+
+      <!-- Outbox Table -->
+      <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/60">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-900/90 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+            <tr>
+              <th class="py-3 px-4">Channel & Time</th>
+              <th class="py-3 px-4">Department & Class</th>
+              <th class="py-3 px-4">Recipient</th>
+              <th class="py-3 px-4">Trigger Reason</th>
+              <th class="py-3 px-4">Subject / Message Preview</th>
+              <th class="py-3 px-4">Delivery Status</th>
+              <th class="py-3 px-4 text-right">Inspect</th>
+            </tr>
+          </thead>
+          <tbody id="campus-outbox-tbody" class="divide-y divide-slate-800/60 font-mono text-[11px]">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal: Raw Outbox Payload Inspector -->
+  <div id="outbox-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <i data-lucide="mail-check" class="w-5 h-5 text-red-500"></i>
+          <h4 class="font-bold text-white text-sm" id="modal-title">Alert Payload Details</h4>
+        </div>
+        <button onclick="closeOutboxModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="py-4 space-y-3 text-xs" id="modal-content">
+        <!-- Rendered by JS -->
+      </div>
+      <div class="pt-3 border-t border-slate-800 flex justify-end">
+        <button onclick="closeOutboxModal()" class="px-4 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors cursor-pointer">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add Student Enrollment -->
+  <div id="add-student-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <i data-lucide="user-plus" class="w-5 h-5 text-red-500"></i>
+          <h4 class="font-bold text-white text-sm">Enroll Student & Biometric Profile</h4>
+        </div>
+        <button onclick="closeAddStudentModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <form onsubmit="handleEnrollStudent(event)" class="py-4 space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Student Full Name</label>
+          <input type="text" id="new-stu-name" required placeholder="e.g. Swetha Ramesh" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-100 focus:outline-none focus:border-red-500" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-slate-400 mb-1">Roll Number</label>
+            <input type="text" id="new-stu-roll" required placeholder="e.g. 21CS117" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-100 font-mono focus:outline-none focus:border-red-500" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Target Class</label>
+            <select id="new-stu-class" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-100 focus:outline-none focus:border-red-500 font-mono">
+              <option value="CSE-A">CSE-A</option>
+              <option value="CSE-B">CSE-B</option>
+              <option value="IT-A">IT-A</option>
+              <option value="IT-B">IT-B</option>
+              <option value="ECE-A">ECE-A</option>
+              <option value="AIDS-A">AIDS-A</option>
+              <option value="MECH-A">MECH-A</option>
+              <option value="CIVIL-A">CIVIL-A</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-slate-400 mb-1">Assigned Desk</label>
+            <input type="text" id="new-stu-desk" required placeholder="e.g. Desk A-02" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-100 font-mono focus:outline-none focus:border-red-500" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Parent Phone (SMS)</label>
+            <input type="text" id="new-stu-phone" required placeholder="+91 98401 23456" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-100 font-mono focus:outline-none focus:border-red-500" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Parent Full Name</label>
+          <input type="text" id="new-stu-parent" required placeholder="e.g. Mr. Ramesh Sundaram" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-100 focus:outline-none focus:border-red-500" />
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeAddStudentModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold cursor-pointer">Register Biometric Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Master JavaScript Application Engine -->
+  <script>
+    // Centralized Campus State Data Store
+    const campusState = {
+      darkMode: true,
+      currentView: 'campus', // 'campus' or 'classroom'
+      activeDeptFilter: 'ALL',
+      selectedClassId: 'CSE-A',
+      selectedPeriodId: 1,
+      outboxFilter: 'all',
+      rosterSearch: '',
+      rosterStatusFilter: 'all',
+      selectedDeskForSwap: null,
+
+      // 6 Academic Departments
+      departments: [
+        {
+          id: 'CSE',
+          name: 'Computer Science & Engineering',
+          shortName: 'CSE',
+          code: 'DEPT-01',
+          hod: {
+            name: 'Prof. Dr. V. Sundaramurthy',
+            title: 'HOD & Professor, CSE',
+            phone: '+91 94440 88991',
+            email: 'hod.cse@university.edu'
+          },
+          classes: ['CSE-A', 'CSE-B']
+        },
+        {
+          id: 'IT',
+          name: 'Information Technology',
+          shortName: 'IT',
+          code: 'DEPT-02',
+          hod: {
+            name: 'Dr. Radhika Raman',
+            title: 'HOD, Information Tech',
+            phone: '+91 98402 77112',
+            email: 'hod.it@university.edu'
+          },
+          classes: ['IT-A', 'IT-B']
+        },
+        {
+          id: 'ECE',
+          name: 'Electronics & Communication',
+          shortName: 'ECE',
+          code: 'DEPT-03',
+          hod: {
+            name: 'Dr. G. Narayanan',
+            title: 'HOD, Electronics & Comm.',
+            phone: '+91 97909 33221',
+            email: 'hod.ece@university.edu'
+          },
+          classes: ['ECE-A', 'ECE-B']
+        },
+        {
+          id: 'AIDS',
+          name: 'Artificial Intelligence & Data Science',
+          shortName: 'AI & DS',
+          code: 'DEPT-04',
+          hod: {
+            name: 'Dr. Priya Balasubramanian',
+            title: 'HOD, AI & Data Science',
+            phone: '+91 94441 55667',
+            email: 'hod.aids@university.edu'
+          },
+          classes: ['AIDS-A', 'AIDS-B']
+        },
+        {
+          id: 'MECH',
+          name: 'Mechanical Engineering',
+          shortName: 'Mech',
+          code: 'DEPT-05',
+          hod: {
+            name: 'Prof. K. Ravichandran',
+            title: 'HOD, Mechanical Engg.',
+            phone: '+91 98840 99881',
+            email: 'hod.mech@university.edu'
+          },
+          classes: ['MECH-A', 'MECH-B']
+        },
+        {
+          id: 'CIVIL',
+          name: 'Civil Engineering',
+          shortName: 'Civil',
+          code: 'DEPT-06',
+          hod: {
+            name: 'Dr. M. Anandhan',
+            title: 'HOD, Civil Engg.',
+            phone: '+91 91760 44332',
+            email: 'hod.civil@university.edu'
+          },
+          classes: ['CIVIL-A']
+        }
+      ],
+
+      // 11 Classrooms Metadata
+      classrooms: {
+        'CSE-A': {
+          id: 'CSE-A',
+          deptId: 'CSE',
+          name: 'Computer Science - Section A',
+          year: 'Year 3 (Sem 5)',
+          room: 'Hall 302',
+          camId: 'CAM-CSE-A01',
+          totalStudents: 42,
+          presentCount: 39,
+          absentCount: 3,
+          shufflesResolved: 2,
+          proxySpoofs: 0,
+          facultyCheckedIn: true,
+          activeSubject: 'CS8501: Distributed Systems',
+          currentFaculty: 'Prof. Dr. V. Sundaramurthy',
+          facultyContact: '+91 94440 88991',
+          firstScanDone: true,
+          sweepDone: false
+        },
+        'CSE-B': {
+          id: 'CSE-B',
+          deptId: 'CSE',
+          name: 'Computer Science - Section B',
+          year: 'Year 3 (Sem 5)',
+          room: 'Hall 304',
+          camId: 'CAM-CSE-B01',
+          totalStudents: 40,
+          presentCount: 38,
+          absentCount: 2,
+          shufflesResolved: 1,
+          proxySpoofs: 0,
+          facultyCheckedIn: true,
+          activeSubject: 'CS8502: Machine Learning',
+          currentFaculty: 'Dr. Ananya Sen',
+          facultyContact: '+91 98410 77123',
+          firstScanDone: true,
+          sweepDone: false
+        },
+        'IT-A': {
+          id: 'IT-A',
+          deptId: 'IT',
+          name: 'Information Technology - Section A',
+          year: 'Year 2 (Sem 3)',
+          room: 'IT Block 201',
+          camId: 'CAM-IT-A01',
+          totalStudents: 38,
+          presentCount: 36,
+          absentCount: 2,
+          shufflesResolved: 1,
+          proxySpoofs: 0,
+          facultyCheckedIn: true,
+          activeSubject: 'IT8301: Web Architectures',
+          currentFaculty: 'Prof. R. K. Iyer',
+          facultyContact: '+91 97910 44521',
+          firstScanDone: true,
+          sweepDone: false
+        },
+        'IT-B': {
+          id: 'IT-B',
+          deptId: 'IT',
+          name: 'Information Technology - Section B',
+          year: 'Year 2 (Sem 3)',
+          room: 'IT Block 204',
+          camId: 'CAM-IT-B01',
+          totalStudents: 36,
+          presentCount: 31,
+          absentCount: 5,
+          shufflesResolved: 2,
+          proxySpoofs: 0,
+          facultyCheckedIn: false, // Flagged faculty no-show
+          activeSubject: 'IT8304: Database Internals',
+          currentFaculty: 'Dr. Suresh Kumar (No-Show)',
+          facultyContact: '+91 98415 99312',
+          firstScanDone: false,
+          sweepDone: false
+        },
+        'ECE-A': {
+          id: 'ECE-A',
+          deptId: 'ECE',
+          name: 'Electronics & Comm - Section A',
+          year: 'Year 3 (Sem 5)',
+          room: 'ECE Hall 101',
+          camId: 'CAM-ECE-A01',
+          totalStudents: 40,
+          presentCount: 38,
+          absentCount: 2,
+          shufflesResolved: 2,
+          proxySpoofs: 0,
+          facultyCheckedIn: true,
+          activeSubject: 'EC8501: Digital Signal Processing',
+          currentFaculty: 'Dr. G. Narayanan',
+          facultyContact: '+91 97909 33221',
+          firstScanDone: true,
+          sweepDone: false
+        },
+        'ECE-B': {
+          id: 'ECE-B',
+          deptId: 'ECE',
+          name: 'Electronics & Comm - Section B',
+          year: 'Year 3 (Sem 5)',
+          room: 'ECE Hall 103',
+          camId: 'CAM-ECE-B01',
+          totalStudents: 38,
+          presentCount: 36,
+          absentCount: 2,
+          shufflesResolved: 1,
+          proxySpoofs: 0,
+          facultyCheckedIn: true,
+          activeSubject: 'EC8502: VLSI Design Systems',
+          currentFaculty: 'Dr. Meenakshi S.',
+          facultyContact: '+91 94451 99201',
+          firstScanDone: true,
+          sweepDone: false
+        },
+        'AIDS-A': {
+          id: 'AIDS-A',
+          deptId: 'AIDS',
+          name: 'AI & Data Science - Section A',
+          year: 'Year 2 (Sem 3)',
+          room: 'Innovation Lab 1',
+          camId: 'CAM-AIDS-A01',
+          totalStudents: 44,
+          presentCount: 42,
+          absentCount: 2,
+          shufflesResolved: 2,
+          proxySpoofs: 0,
+          facultyCheckedIn: true,
+          activeSubject: 'AD8302: Deep Neural Networks',
+          currentFaculty: 'Dr. Priya Balasubramanian',
+          facultyContact: '+91 94441 55667',
+          firstScanDone: true,
+          sweepDone: false
+        },
+        'AIDS-B': {
+          id: 'AIDS-B',
+          deptId: 'AIDS',
+          name: 'AI & Data Science - Section B',
+          year: 'Year 2 (Sem 3)',
+          room: 'Innovation Lab 2',
+          camId: 'CAM-AIDS-B01',
+          totalStudents: 42,
+          presentCount: 40,
+          absentCount: 2,
+          shufflesResolved: 1,
+          proxySpoofs: 0,
+          facultyCheckedIn: true,
+          activeSubject: 'AD8303: Big Data Analytics',
+          currentFaculty: 'Dr. Swaminathan',
+          facultyContact: '+91 98840 66329',
+          firstScanDone: true,
+          sweepDone: false
+        },
+        'MECH-A': {
+          id: 'MECH-A',
+          deptId: 'MECH',
+          name: 'Mechanical Engg - Section A',
+          year: 'Year 4 (Sem 7)',
+          room: 'Mech Block 102',
+          camId: 'CAM-MECH-A01',
+          totalStudents: 36,
+          presentCount: 34,
+          absentCount: 2,
+          shufflesResolved: 1,
+          proxySpoofs: 0,
+          facultyCheckedIn: true,
+          activeSubject: 'ME8701: Thermodynamics & Heat',
+          currentFaculty: 'Prof. K. Ravichandran',
+          facultyContact: '+91 98840 99881',
+          firstScanDone: true,
+          sweepDone: false
+        },
+        'MECH-B': {
+          id: 'MECH-B',
+          deptId: 'MECH',
+          name: 'Mechanical Engg - Section B',
+          year: 'Year 4 (Sem 7)',
+          room: 'Mech Block 105',
+          camId: 'CAM-MECH-B01',
+          totalStudents: 34,
+          presentCount: 32,
+          absentCount: 2,
+          shufflesResolved: 1,
+          proxySpoofs: 0,
+          facultyCheckedIn: true,
+          activeSubject: 'ME8702: Robotics & Automation',
+          currentFaculty: 'Prof. David Chen',
+          facultyContact: '+91 91760 33812',
+          firstScanDone: true,
+          sweepDone: false
+        },
+        'CIVIL-A': {
+          id: 'CIVIL-A',
+          deptId: 'CIVIL',
+          name: 'Civil Engineering - Section A',
+          year: 'Year 3 (Sem 5)',
+          room: 'Civil Studio 01',
+          camId: 'CAM-CIVIL-A01',
+          totalStudents: 32,
+          presentCount: 29,
+          absentCount: 3,
+          shufflesResolved: 0,
+          proxySpoofs: 0,
+          facultyCheckedIn: true,
+          activeSubject: 'CE8503: Structural Analysis II',
+          currentFaculty: 'Dr. M. Anandhan',
+          facultyContact: '+91 91760 44332',
+          firstScanDone: true,
+          sweepDone: false
+        }
+      },
+
+      // 7 Dynamic Timetable Periods (Period 1 to Period 7)
+      periods: [
+        { id: 1, label: 'Period 1', time: '09:00 - 09:50 AM', window: '09:00 - 09:10', subject: 'CS8501: Distributed Systems', room: 'Hall 302', faculty: 'Prof. Dr. V. Sundaramurthy', status: 'IN_SESSION' },
+        { id: 2, label: 'Period 2', time: '09:50 - 10:40 AM', window: '09:50 - 10:00', subject: 'CS8502: Machine Learning', room: 'AI Lab B', faculty: 'Dr. Ananya Sen', status: 'SCHEDULED' },
+        { id: 3, label: 'Period 3', time: '11:00 - 11:50 AM', window: '11:00 - 11:10', subject: 'CS8503: Cloud Computing', room: 'Hall 201', faculty: 'Prof. R. K. Iyer', status: 'SCHEDULED' },
+        { id: 4, label: 'Period 4', time: '11:50 - 12:40 PM', window: '11:50 - 12:00', subject: 'CS8504: Cyber Security', room: 'Sec Lab 1', faculty: 'Dr. Meenakshi S.', status: 'SCHEDULED' },
+        { id: 5, label: 'Period 5', time: '01:30 - 02:20 PM', window: '01:30 - 01:40', subject: 'CS8505: Compiler Design', room: 'Hall 305', faculty: 'Prof. David Chen', status: 'SCHEDULED' },
+        { id: 6, label: 'Period 6', time: '02:20 - 03:10 PM', window: '02:20 - 02:30', subject: 'CS8506: Big Data Analytics', room: 'Data Lab', faculty: 'Dr. Swaminathan', status: 'SCHEDULED' },
+        { id: 7, label: 'Period 7', time: '03:10 - 04:00 PM', window: '03:10 - 03:20', subject: 'CS8507: Project Mentorship Lab', room: 'Hall 302', faculty: 'Dr. Ananya Sen', status: 'SCHEDULED' },
+      ],
+
+      // Classroom 2D Desk Matrix (16 Desks for active class)
+      desks: [
+        { id: 'A-01', row: 'A', col: 1 }, { id: 'A-02', row: 'A', col: 2 }, { id: 'A-03', row: 'A', col: 3 }, { id: 'A-04', row: 'A', col: 4 },
+        { id: 'B-01', row: 'B', col: 1 }, { id: 'B-02', row: 'B', col: 2 }, { id: 'B-03', row: 'B', col: 3 }, { id: 'B-04', row: 'B', col: 4 },
+        { id: 'C-01', row: 'C', col: 1 }, { id: 'C-02', row: 'C', col: 2 }, { id: 'C-03', row: 'C', col: 3 }, { id: 'C-04', row: 'C', col: 4 },
+        { id: 'D-01', row: 'D', col: 1 }, { id: 'D-02', row: 'D', col: 2 }, { id: 'D-03', row: 'D', col: 3 }, { id: 'D-04', row: 'D', col: 4 },
+      ],
+
+      // Active Students for the Deep-Dive Class (CSE-A by default)
+      students: [
+        { id: 'stu-1', name: 'Aarav Sharma', rollNo: '21CS101', classId: 'CSE-A', assignedDesk: 'A-01', detectedDesk: 'C-02', faceConfidence: 98.7, status: 'present', isSeatSwapped: true, isProxy: false, overallAttendance: 92.4, parentName: 'Mr. Rajesh Sharma', parentPhone: '+91 98401 11223', avatarBg: 'bg-emerald-900 text-emerald-200' },
+        { id: 'stu-2', name: 'Priya Nair', rollNo: '21CS102', classId: 'CSE-A', assignedDesk: 'C-02', detectedDesk: 'A-01', faceConfidence: 99.1, status: 'present', isSeatSwapped: true, isProxy: false, overallAttendance: 95.8, parentName: 'Mrs. Geetha Nair', parentPhone: '+91 98402 33445', avatarBg: 'bg-purple-900 text-purple-200' },
+        { id: 'stu-3', name: 'Rohan Verma', rollNo: '21CS103', classId: 'CSE-A', assignedDesk: 'A-03', detectedDesk: 'A-03', faceConfidence: 97.4, status: 'present', isSeatSwapped: false, isProxy: false, overallAttendance: 88.0, parentName: 'Mr. Sunil Verma', parentPhone: '+91 98403 44556', avatarBg: 'bg-blue-900 text-blue-200' },
+        { id: 'stu-4', name: 'Ananya Iyer', rollNo: '21CS104', classId: 'CSE-A', assignedDesk: 'A-04', detectedDesk: 'A-04', faceConfidence: 99.4, status: 'present', isSeatSwapped: false, isProxy: false, overallAttendance: 96.2, parentName: 'Dr. K. Iyer', parentPhone: '+91 98404 55667', avatarBg: 'bg-rose-900 text-rose-200' },
+        { id: 'stu-5', name: 'Vikramaditya Rao', rollNo: '21CS105', classId: 'CSE-A', assignedDesk: 'B-01', detectedDesk: 'B-01', faceConfidence: 96.9, status: 'present', isSeatSwapped: false, isProxy: false, overallAttendance: 74.0, parentName: 'Mr. Ananth Rao', parentPhone: '+91 98405 66778', avatarBg: 'bg-amber-900 text-amber-200' },
+        { id: 'stu-6', name: 'Sneha Kulkarni', rollNo: '21CS106', classId: 'CSE-A', assignedDesk: 'B-02', detectedDesk: 'B-02', faceConfidence: 98.3, status: 'present', isSeatSwapped: false, isProxy: false, overallAttendance: 91.5, parentName: 'Mr. Prakash Kulkarni', parentPhone: '+91 98406 77889', avatarBg: 'bg-indigo-900 text-indigo-200' },
+        { id: 'stu-7', name: 'Karthik Subramanian', rollNo: '21CS107', classId: 'CSE-A', assignedDesk: 'B-03', detectedDesk: 'B-03', faceConfidence: 95.8, status: 'present', isSeatSwapped: false, isProxy: false, overallAttendance: 86.4, parentName: 'Mr. Subramanian V.', parentPhone: '+91 98407 88990', avatarBg: 'bg-cyan-900 text-cyan-200' },
+        { id: 'stu-8', name: 'Tanya Sengupta', rollNo: '21CS108', classId: 'CSE-A', assignedDesk: 'B-04', detectedDesk: 'B-04', faceConfidence: 99.0, status: 'present', isSeatSwapped: false, isProxy: false, overallAttendance: 94.1, parentName: 'Mrs. Shampa Sengupta', parentPhone: '+91 98408 99001', avatarBg: 'bg-teal-900 text-teal-200' },
+        { id: 'stu-9', name: 'Aditya Deshmukh', rollNo: '21CS109', classId: 'CSE-A', assignedDesk: 'C-01', detectedDesk: 'C-01', faceConfidence: 97.8, status: 'present', isSeatSwapped: false, isProxy: false, overallAttendance: 89.6, parentName: 'Mr. Nitin Deshmukh', parentPhone: '+91 98409 00112', avatarBg: 'bg-violet-900 text-violet-200' },
+        { id: 'stu-10', name: 'Divya Pillai', rollNo: '21CS110', classId: 'CSE-A', assignedDesk: 'C-03', detectedDesk: 'C-03', faceConfidence: 98.6, status: 'present', isSeatSwapped: false, isProxy: false, overallAttendance: 93.3, parentName: 'Mr. Chandran Pillai', parentPhone: '+91 98410 11224', avatarBg: 'bg-pink-900 text-pink-200' },
+        { id: 'stu-11', name: 'Rahul Menaria', rollNo: '21CS111', classId: 'CSE-A', assignedDesk: 'C-04', detectedDesk: 'C-04', faceConfidence: 96.5, status: 'present', isSeatSwapped: false, isProxy: false, overallAttendance: 71.5, parentName: 'Mr. Harish Menaria', parentPhone: '+91 98411 22335', avatarBg: 'bg-orange-900 text-orange-200' },
+        { id: 'stu-12', name: 'Meera Chidambaram', rollNo: '21CS112', classId: 'CSE-A', assignedDesk: 'D-01', detectedDesk: 'D-01', faceConfidence: 98.9, status: 'present', isSeatSwapped: false, isProxy: false, overallAttendance: 97.0, parentName: 'Mr. Chidambaram AL', parentPhone: '+91 98412 33446', avatarBg: 'bg-emerald-950 text-emerald-300' },
+        { id: 'stu-13', name: 'Gaurav Banerjee', rollNo: '21CS113', classId: 'CSE-A', assignedDesk: 'D-02', detectedDesk: 'D-02', faceConfidence: 95.9, status: 'present', isSeatSwapped: false, isProxy: false, overallAttendance: 85.0, parentName: 'Dr. Debabrata Banerjee', parentPhone: '+91 98413 44557', avatarBg: 'bg-blue-950 text-blue-300' },
+        { id: 'stu-14', name: 'Shruti Hegde', rollNo: '21CS114', classId: 'CSE-A', assignedDesk: 'D-03', detectedDesk: 'D-03', faceConfidence: 97.2, status: 'present', isSeatSwapped: false, isProxy: false, overallAttendance: 90.0, parentName: 'Mr. Suresh Hegde', parentPhone: '+91 98414 55668', avatarBg: 'bg-rose-950 text-rose-300' },
+        { id: 'stu-15', name: 'Manish Tiwari', rollNo: '21CS115', classId: 'CSE-A', assignedDesk: 'D-04', detectedDesk: 'NONE', faceConfidence: 0.0, status: 'absent', isSeatSwapped: false, isProxy: false, overallAttendance: 68.4, parentName: 'Mr. Arvind Tiwari', parentPhone: '+91 98415 66779', avatarBg: 'bg-slate-800 text-slate-400' },
+        { id: 'stu-16', name: 'Neha Kapoor', rollNo: '21CS116', classId: 'CSE-A', assignedDesk: 'A-02', detectedDesk: 'NONE', faceConfidence: 0.0, status: 'absent', isSeatSwapped: false, isProxy: false, overallAttendance: 72.0, parentName: 'Mr. Rakesh Kapoor', parentPhone: '+91 98416 77880', avatarBg: 'bg-slate-800 text-slate-400' },
+      ],
+
+      // Campus-Wide Outbox Messages Ledger
+      outbox: [
+        {
+          id: 'msg-it-fac-01',
+          channel: 'SMS',
+          category: 'HOD',
+          timestamp: '09:10:14 AM',
+          dept: 'IT',
+          classId: 'IT-B',
+          recipientType: 'HOD',
+          recipientName: 'Dr. Radhika Raman (HOD IT)',
+          contact: '+91 98402 77112',
+          reason: 'Faculty 10-Minute No-Show',
+          subject: 'CRITICAL ESCALATION: Class IT-B Unattended',
+          message: 'TechVanta Automated Alert: Instructor Dr. Suresh Kumar failed to check in for Period 1 (IT8304: Database Internals in IT Block 204). 31 students are present. Please assign substitute faculty.',
+          status: 'DELIVERED',
+          payloadHash: 'SHA256:4fa991...1b20'
+        },
+        {
+          id: 'msg-it-fac-02',
+          channel: 'EMAIL',
+          category: 'HOD',
+          timestamp: '09:10:15 AM',
+          dept: 'IT',
+          classId: 'IT-B',
+          recipientType: 'Dean & HOD',
+          recipientName: 'IT HOD Office & Academic Dean',
+          contact: 'hod.it@university.edu',
+          reason: 'Faculty Absence Incident Log',
+          subject: '[URGENT] Faculty No-Show: IT-B Database Internals',
+          message: 'Official Escalation: AI camera sensor in IT Block 204 verified zero faculty check-in before 09:10 AM threshold. Incident logged to academic governance system.',
+          status: 'DELIVERED',
+          payloadHash: 'SHA256:99ca12...78de'
+        },
+        {
+          id: 'msg-cse-01',
+          channel: 'SMS',
+          category: 'Parent',
+          timestamp: '09:10:02 AM',
+          dept: 'CSE',
+          classId: 'CSE-A',
+          recipientType: 'Parent',
+          recipientName: 'Mr. Arvind Tiwari',
+          contact: '+91 98415 66779',
+          reason: 'Student Absent (Period 1)',
+          subject: 'Absence Notice: Manish Tiwari (21CS115)',
+          message: 'TechVanta Automated Alert: Your ward Manish Tiwari (21CS115) was marked ABSENT during the first 10-minute facial biometric scan for Period 1 (CS8501: Distributed Systems, Hall 302). Current attendance is 68.4%.',
+          status: 'DELIVERED',
+          payloadHash: 'SHA256:7f4a9b...c1e9'
+        },
+        {
+          id: 'msg-cse-02',
+          channel: 'SMS',
+          category: 'Parent',
+          timestamp: '09:10:04 AM',
+          dept: 'CSE',
+          classId: 'CSE-A',
+          recipientType: 'Parent',
+          recipientName: 'Mr. Rakesh Kapoor',
+          contact: '+91 98416 77880',
+          reason: 'Student Absent (Period 1)',
+          subject: 'Absence Notice: Neha Kapoor (21CS116)',
+          message: 'TechVanta Automated Alert: Neha Kapoor (21CS116) was recorded ABSENT for Period 1 (CS8501, Hall 302). Please contact academic counselor if this is an error.',
+          status: 'DELIVERED',
+          payloadHash: 'SHA256:e3b0c4...9a21'
+        },
+        {
+          id: 'msg-cse-audit-01',
+          channel: 'AUDIT',
+          category: 'ShuffleAudit',
+          timestamp: '09:05:41 AM',
+          dept: 'CSE',
+          classId: 'CSE-A',
+          recipientType: 'Audit Ledger',
+          recipientName: 'Anti-Seat-Shuffle AI Engine',
+          contact: 'Hall 302 RTSP Log',
+          reason: 'Face-First Match Resolved',
+          subject: 'Seat Swap Auto-Resolved: Aarav Sharma',
+          message: 'Student Aarav Sharma (21CS101) detected at Desk C-02 (Assigned: Desk A-01). Facial cosine similarity 0.987 >= 0.88. Attendance attributed to Aarav Sharma. 0 false proxy issued.',
+          status: 'VERIFIED',
+          payloadHash: 'SHA256:8892bc...0f31'
+        },
+        {
+          id: 'msg-cse-audit-02',
+          channel: 'AUDIT',
+          category: 'ShuffleAudit',
+          timestamp: '09:05:42 AM',
+          dept: 'CSE',
+          classId: 'CSE-A',
+          recipientType: 'Audit Ledger',
+          recipientName: 'Anti-Seat-Shuffle AI Engine',
+          contact: 'Hall 302 RTSP Log',
+          reason: 'Face-First Match Resolved',
+          subject: 'Seat Swap Auto-Resolved: Priya Nair',
+          message: 'Student Priya Nair (21CS102) detected at Desk A-01 (Assigned: Desk C-02). Facial cosine similarity 0.991 >= 0.88. Attendance attributed to Priya Nair. 0 false proxy issued.',
+          status: 'VERIFIED',
+          payloadHash: 'SHA256:321bc7...ef01'
+        }
+      ]
+    };
+
+    // Initialize System
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      populateClassSwitcher();
+      renderAll();
+      startLiveClock();
+    });
+
+    function startLiveClock() {
+      setInterval(() => {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const hud = document.getElementById('hud-live-time');
+        if (hud) hud.innerText = timeStr;
+      }, 1000);
+    }
+
+    function populateClassSwitcher() {
+      const select = document.getElementById('quick-class-switcher');
+      select.innerHTML = Object.keys(campusState.classrooms).map(k => {
+        const c = campusState.classrooms[k];
+        return `<option value="${c.id}" ${c.id === campusState.selectedClassId ? 'selected' : ''}>${c.id} - ${c.name} (${c.room})</option>`;
+      }).join('');
+    }
+
+    // View Switching: Campus Matrix vs Classroom Deep Dive
+    function setViewMode(mode) {
+      campusState.currentView = mode;
+      const campusContainer = document.getElementById('view-campus-container');
+      const classContainer = document.getElementById('view-classroom-container');
+      const navCampus = document.getElementById('nav-btn-campus');
+      const navClass = document.getElementById('nav-btn-classroom');
+
+      if (mode === 'campus') {
+        campusContainer.classList.remove('hidden');
+        classContainer.classList.add('hidden');
+        navCampus.className = 'px-3 py-1.5 rounded-lg bg-red-600 text-white transition-all cursor-pointer flex items-center gap-1.5';
+        navClass.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer flex items-center gap-1.5';
+      } else {
+        campusContainer.classList.add('hidden');
+        classContainer.classList.remove('hidden');
+        navCampus.className = 'px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer flex items-center gap-1.5';
+        navClass.className = 'px-3 py-1.5 rounded-lg bg-red-600 text-white transition-all cursor-pointer flex items-center gap-1.5';
+      }
+
+      renderAll();
+    }
+
+    // Drill-Down into specific classroom
+    function drillDownToClass(classId) {
+      campusState.selectedClassId = classId;
+      document.getElementById('quick-class-switcher').value = classId;
+      setViewMode('classroom');
+      triggerToast('info', `Opened ${classId} Classroom Feed`, `Connected to ${campusState.classrooms[classId].room} CCTV camera & timetable.`);
+    }
+
+    function selectClassroom(classId) {
+      campusState.selectedClassId = classId;
+      renderAll();
+    }
+
+    // Master Render Dispatcher
+    function renderAll() {
+      renderGlobalKPIs();
+      if (campusState.currentView === 'campus') {
+        renderDepartmentCards();
+      } else {
+        renderClassroomDeepDive();
+      }
+      renderCampusOutbox();
+      lucide.createIcons();
+    }
+
+    // Render Global Campus KPIs
+    function renderGlobalKPIs() {
+      const classList = Object.values(campusState.classrooms);
+      const totalStrength = classList.reduce((acc, c) => acc + c.totalStudents, 0);
+      const totalPresent = classList.reduce((acc, c) => acc + c.presentCount, 0);
+      const totalShuffles = classList.reduce((acc, c) => acc + c.shufflesResolved, 0);
+      const facultyAlerts = classList.filter(c => !c.facultyCheckedIn).length;
+      const pct = totalStrength > 0 ? ((totalPresent / totalStrength) * 100).toFixed(1) : '0.0';
+
+      document.getElementById('global-total-students').innerText = totalStrength;
+      document.getElementById('global-present-pct').innerText = `${pct}%`;
+      document.getElementById('global-present-count').innerText = `(${totalPresent} / ${totalStrength})`;
+      document.getElementById('global-active-classes').innerText = classList.length;
+      document.getElementById('global-shuffles-count').innerText = totalShuffles;
+      document.getElementById('global-faculty-alerts').innerText = facultyAlerts;
+      document.getElementById('global-outbox-count').innerText = campusState.outbox.length;
+    }
+
+    // Filter Department View
+    function filterDepartmentView(deptId) {
+      campusState.activeDeptFilter = deptId;
+      ['ALL', 'CSE', 'IT', 'ECE', 'AIDS', 'MECH', 'CIVIL'].forEach(d => {
+        const btn = document.getElementById(`dept-filter-${d}`);
+        if (!btn) return;
+        if (d === deptId) {
+          btn.className = 'px-2.5 py-1 rounded-lg font-medium bg-red-600 text-white transition-colors cursor-pointer';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition-colors cursor-pointer';
+        }
+      });
+      renderDepartmentCards();
+    }
+
+    // Render All Departments & Classes (Campus Matrix)
+    function renderDepartmentCards() {
+      const container = document.getElementById('departments-list-container');
+      
+      const filteredDepts = campusState.departments.filter(dept => {
+        if (campusState.activeDeptFilter === 'ALL') return true;
+        return dept.id === campusState.activeDeptFilter;
+      });
+
+      container.innerHTML = filteredDepts.map(dept => {
+        // Find all classes belonging to this department
+        const deptClasses = dept.classes.map(cid => campusState.classrooms[cid]).filter(Boolean);
+        const deptStrength = deptClasses.reduce((acc, c) => acc + c.totalStudents, 0);
+        const deptPresent = deptClasses.reduce((acc, c) => acc + c.presentCount, 0);
+        const deptPct = deptStrength > 0 ? ((deptPresent / deptStrength) * 100).toFixed(1) : '0.0';
+        const hasFacultyAlert = deptClasses.some(c => !c.facultyCheckedIn);
+
+        return `
+          <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
+            <!-- Department Title Bar -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between pb-3 border-b border-slate-800 gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-950 to-slate-900 border border-red-800/80 flex items-center justify-center font-bold text-red-400 text-sm">
+                  ${dept.id}
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h4 class="text-base font-bold text-white">${dept.name}</h4>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">${dept.code}</span>
+                    ${hasFacultyAlert ? '<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-red-950 text-red-300 border border-red-800 font-bold animate-pulse">FACULTY NO-SHOW ALERT</span>' : ''}
+                  </div>
+                  <div class="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                    <span>HOD: <strong class="text-slate-200">${dept.hod.name}</strong></span>
+                    <span>•</span>
+                    <span class="font-mono text-slate-400">${dept.hod.phone}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dept Aggregate Stats -->
+              <div class="flex items-center gap-4 text-xs font-mono">
+                <div class="text-right">
+                  <div class="text-slate-400 text-[10px] uppercase">Dept Rate</div>
+                  <div class="text-base font-bold ${deptPct >= 90 ? 'text-emerald-400' : 'text-amber-400'}">${deptPct}%</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-slate-400 text-[10px] uppercase">Present / Total</div>
+                  <div class="text-slate-200 font-bold">${deptPresent} / ${deptStrength}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Respective Classes Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              ${deptClasses.map(cls => {
+                const clsPct = ((cls.presentCount / cls.totalStudents) * 100).toFixed(1);
+                const isNoShow = !cls.facultyCheckedIn;
+
+                return `
+                  <div onclick="drillDownToClass('${cls.id}')" class="p-4 rounded-xl border ${isNoShow ? 'bg-red-950/20 border-red-700/80' : 'bg-slate-950/70 border-slate-800'} hover:border-red-600/80 hover:bg-slate-900 transition-all cursor-pointer group shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                          <span class="font-bold font-mono text-sm text-white group-hover:text-red-400 transition-colors">${cls.id}</span>
+                          <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">${cls.room}</span>
+                        </div>
+                        <span class="text-xs font-mono font-bold ${clsPct >= 90 ? 'text-emerald-400' : 'text-amber-400'}">${clsPct}%</span>
+                      </div>
+
+                      <div class="mt-2 text-xs font-semibold text-slate-200 truncate">
+                        ${cls.activeSubject}
+                      </div>
+
+                      <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+                        <span class="truncate">Faculty: ${cls.currentFaculty}</span>
+                      </div>
+                    </div>
+
+                    <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono">
+                      <div class="flex items-center gap-2">
+                        <span class="text-emerald-400 font-semibold">${cls.presentCount}P</span>
+                        <span class="text-slate-600">/</span>
+                        <span class="text-amber-400 font-semibold">${cls.absentCount}A</span>
+                        ${cls.shufflesResolved > 0 ? `<span class="text-purple-400 text-[10px] font-bold">(${cls.shufflesResolved} Swaps)</span>` : ''}
+                      </div>
+
+                      <div class="flex items-center gap-1 text-slate-400 group-hover:text-red-400 transition-colors text-[10px] font-semibold">
+                        <span>Open Feed</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                      </div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    // Render Classroom Deep Dive
+    function renderClassroomDeepDive() {
+      const cls = campusState.classrooms[campusState.selectedClassId] || campusState.classrooms['CSE-A'];
+      const dept = campusState.departments.find(d => d.id === cls.deptId) || campusState.departments[0];
+
+      // Breadcrumbs
+      document.getElementById('breadcrumb-dept').innerText = dept.name;
+      document.getElementById('breadcrumb-class').innerText = cls.id;
+      document.getElementById('class-timetable-header').innerText = `${cls.id} Dynamic 7-Period Timetable`;
+
+      // Timetable Periods Strip
+      const periodsContainer = document.getElementById('periods-strip-container');
+      periodsContainer.innerHTML = campusState.periods.map(p => {
+        const isSelected = p.id === campusState.selectedPeriodId;
+        return `
+          <button onclick="selectPeriod(${p.id})" class="text-left p-2.5 rounded-xl border transition-all cursor-pointer ${isSelected ? 'bg-red-950/40 border-red-600/80 ring-1 ring-red-600/50' : 'border-slate-800 bg-slate-950/60 hover:bg-slate-800'}">
+            <div class="flex items-center justify-between text-[11px] mb-1">
+              <span class="font-bold ${isSelected ? 'text-white' : 'text-slate-300'}">${p.label}</span>
+              <span class="text-[9px] font-mono px-1 py-0.2 rounded bg-slate-800 text-slate-400">${p.time.split(' ')[0]}</span>
+            </div>
+            <div class="text-[11px] font-semibold text-slate-200 truncate">${p.subject.split(':')[1] || p.subject}</div>
+            <div class="text-[10px] text-slate-400 truncate">${p.faculty.split(' ')[0]}</div>
+          </button>
+        `;
+      }).join('');
+
+      // Active Period Info
+      const activeP = campusState.periods.find(p => p.id === campusState.selectedPeriodId) || campusState.periods[0];
+      document.getElementById('active-period-badge').innerText = `P${activeP.id}`;
+      document.getElementById('active-period-subject').innerText = activeP.subject;
+      document.getElementById('active-period-room').innerText = cls.room;
+      document.getElementById('active-period-faculty-name').innerText = cls.currentFaculty;
+
+      // CCTV Camera Stream Info
+      document.getElementById('cctv-stream-title').innerText = `Live RTSP Cam Stream - ${cls.room} (${cls.id})`;
+      document.getElementById('cctv-cam-code').innerText = cls.camId;
+      document.getElementById('cctv-tracking-count').innerText = `${cls.presentCount} Faces Tracked`;
+
+      renderCameraOverlay();
+      render2DDeskGrid();
+      renderRosterTable();
+    }
+
+    function selectPeriod(periodId) {
+      campusState.selectedPeriodId = periodId;
+      const p = campusState.periods.find(x => x.id === periodId);
+      triggerToast('info', `Switched to Period ${p.id}`, `${p.subject} with ${p.faculty}.`);
+      renderAll();
+    }
+
+    // Render Camera Overlay with Face Bounding Boxes
+    function renderCameraOverlay() {
+      const container = document.getElementById('cctv-faces-overlay');
+      const presentStudents = campusState.students.filter(s => s.status === 'present' || s.isProxy);
+
+      const coords = {
+        'A-01': { top: '15%', left: '8%', width: '18%', height: '32%' },
+        'A-02': { top: '15%', left: '30%', width: '18%', height: '32%' },
+        'A-03': { top: '15%', left: '52%', width: '18%', height: '32%' },
+        'A-04': { top: '15%', left: '74%', width: '18%', height: '32%' },
+        'B-01': { top: '35%', left: '6%', width: '19%', height: '34%' },
+        'B-02': { top: '35%', left: '29%', width: '19%', height: '34%' },
+        'B-03': { top: '35%', left: '52%', width: '19%', height: '34%' },
+        'B-04': { top: '35%', left: '75%', width: '19%', height: '34%' },
+        'C-01': { top: '55%', left: '4%', width: '20%', height: '36%' },
+        'C-02': { top: '55%', left: '28%', width: '20%', height: '36%' },
+        'C-03': { top: '55%', left: '52%', width: '20%', height: '36%' },
+        'C-04': { top: '55%', left: '76%', width: '20%', height: '36%' },
+      };
+
+      container.innerHTML = presentStudents.slice(0, 6).map(s => {
+        const pos = coords[s.detectedDesk] || { top: '25%', left: '25%', width: '18%', height: '32%' };
+        let borderClass = 'border-emerald-400 text-emerald-300';
+        let bgTagClass = 'bg-emerald-950/90 border-emerald-500/80 text-emerald-300';
+        let seatNote = `Desk: ${s.detectedDesk}`;
+
+        if (s.isProxy) {
+          borderClass = 'border-red-500 text-red-400 animate-pulse ring-2 ring-red-500/60';
+          bgTagClass = 'bg-red-950/95 border-red-500 text-red-300';
+          seatNote = `Desk: ${s.detectedDesk} [SPOOF BLOCKED]`;
+        } else if (s.isSeatSwapped) {
+          borderClass = 'border-purple-400 text-purple-300 ring-1 ring-purple-400/50';
+          bgTagClass = 'bg-purple-950/95 border-purple-500 text-purple-200';
+          seatNote = `At ${s.detectedDesk} (Reg: ${s.assignedDesk})`;
+        }
+
+        return `
+          <div class="absolute transition-all duration-700 pointer-events-auto" style="top: ${pos.top}; left: ${pos.left}; width: ${pos.width}; height: ${pos.height};">
+            <div class="relative w-full h-full border ${borderClass} rounded-lg bg-slate-900/10 backdrop-blur-[1px]">
+              <span class="absolute -top-1 -left-1 w-2.5 h-2.5 border-t-2 border-l-2 ${borderClass}"></span>
+              <span class="absolute -top-1 -right-1 w-2.5 h-2.5 border-t-2 border-r-2 ${borderClass}"></span>
+              <span class="absolute -bottom-1 -left-1 w-2.5 h-2.5 border-b-2 border-l-2 ${borderClass}"></span>
+              <span class="absolute -bottom-1 -right-1 w-2.5 h-2.5 border-b-2 border-r-2 ${borderClass}"></span>
+
+              <div class="absolute -top-6 left-0 right-0 flex items-center justify-between text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border ${bgTagClass} truncate">
+                <span class="truncate">${s.name.split(' ')[0]}</span>
+                <span>${s.faceConfidence.toFixed(0)}%</span>
+              </div>
+
+              <div class="absolute -bottom-6 left-0 right-0 text-[8.5px] font-mono px-1 py-0.5 rounded bg-slate-950/90 border border-slate-700 text-slate-300 truncate text-center">
+                ${seatNote}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Render 2D Desk Grid
+    function render2DDeskGrid() {
+      const grid = document.getElementById('classroom-desks-grid');
+      
+      grid.innerHTML = campusState.desks.map(desk => {
+        const occupying = campusState.students.find(s => s.detectedDesk === desk.id);
+        const isSelected = campusState.selectedDeskForSwap === desk.id;
+
+        let statusBg = 'bg-slate-950/80 border-slate-800 text-slate-400';
+        let statusBadge = '<span class="text-[9px] font-mono text-slate-500">Vacant / Absent</span>';
+        let studentName = 'Unoccupied';
+        let roll = '—';
+
+        if (occupying) {
+          studentName = occupying.name;
+          roll = occupying.rollNo;
+
+          if (occupying.isProxy) {
+            statusBg = 'bg-red-950/40 border-red-700 text-red-300 ring-1 ring-red-600/40 animate-pulse';
+            statusBadge = '<span class="text-[9px] font-mono font-bold text-red-400">🚨 Photo Proxy</span>';
+          } else if (occupying.isSeatSwapped) {
+            statusBg = 'bg-purple-950/40 border-purple-600/80 text-purple-200 ring-1 ring-purple-600/40';
+            statusBadge = `<span class="text-[9px] font-mono font-bold text-purple-300">Swapped (${occupying.assignedDesk})</span>`;
+          } else {
+            statusBg = 'bg-emerald-950/20 border-emerald-800/80 text-emerald-300';
+            statusBadge = '<span class="text-[9px] font-mono font-medium text-emerald-400">Face Matched</span>';
+          }
+        }
+
+        if (isSelected) {
+          statusBg += ' ring-2 ring-amber-400 border-amber-400';
+        }
+
+        return `
+          <div onclick="handleDeskClick('${desk.id}')" class="p-2 rounded-xl border ${statusBg} hover:border-slate-600 transition-all cursor-pointer relative group flex flex-col justify-between min-h-[80px]">
+            <div class="flex items-center justify-between text-[10px] font-mono">
+              <span class="font-bold text-slate-300">${desk.id}</span>
+              ${occupying ? `<span class="text-[9px] text-slate-400">${occupying.faceConfidence > 0 ? occupying.faceConfidence.toFixed(0) + '%' : ''}</span>` : ''}
+            </div>
+
+            <div class="my-1">
+              <div class="text-[11px] font-semibold truncate text-slate-100 group-hover:text-red-400 transition-colors">
+                ${studentName}
+              </div>
+              <div class="text-[10px] font-mono text-slate-400">${roll}</div>
+            </div>
+
+            <div class="flex items-center justify-between mt-0.5">${statusBadge}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Desk Swap Click Handler
+    function handleDeskClick(deskId) {
+      if (!campusState.selectedDeskForSwap) {
+        campusState.selectedDeskForSwap = deskId;
+        triggerToast('info', `Selected Desk ${deskId}`, 'Now click another desk to swap their seats and test face-first recognition.');
+        render2DDeskGrid();
+      } else if (campusState.selectedDeskForSwap === deskId) {
+        campusState.selectedDeskForSwap = null;
+        render2DDeskGrid();
+      } else {
+        const desk1 = campusState.selectedDeskForSwap;
+        const desk2 = deskId;
+        campusState.selectedDeskForSwap = null;
+        executeDeskSwap(desk1, desk2);
+      }
+    }
+
+    function executeDeskSwap(deskA, deskB) {
+      const studentAtA = campusState.students.find(s => s.detectedDesk === deskA);
+      const studentAtB = campusState.students.find(s => s.detectedDesk === deskB);
+
+      if (!studentAtA && !studentAtB) {
+        triggerToast('warning', 'Both Desks Empty', 'Please select at least one occupied desk.');
+        return;
+      }
+
+      if (studentAtA) {
+        studentAtA.detectedDesk = deskB;
+        studentAtA.isSeatSwapped = (studentAtA.assignedDesk !== deskB);
+      }
+
+      if (studentAtB) {
+        studentAtB.detectedDesk = deskA;
+        studentAtB.isSeatSwapped = (studentAtB.assignedDesk !== deskA);
+      }
+
+      const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      campusState.outbox.unshift({
+        id: 'msg-shuffle-' + Date.now(),
+        channel: 'AUDIT',
+        category: 'ShuffleAudit',
+        timestamp: timeNow,
+        dept: 'CSE',
+        classId: campusState.selectedClassId,
+        recipientType: 'Audit Ledger',
+        recipientName: 'Anti-Seat-Shuffle Engine',
+        contact: 'Vision RTSP Feed',
+        reason: 'Manual Seat Swap Resolved',
+        subject: `Seat Swap: ${deskA} &harr; ${deskB}`,
+        message: `Seat swap executed between ${deskA} and ${deskB}. TechVanta matched registered facial vectors; attendance credited to true biometric faces without false proxy errors.`,
+        status: 'VERIFIED',
+        payloadHash: 'SHA256:f4892c...9102'
+      });
+
+      triggerToast('success', `Anti-Seat-Shuffle: Desks Swapped`, `Resolved desks between ${deskA} and ${deskB}. Biometric face match takes priority.`);
+      renderAll();
+    }
+
+    // Classroom Quick Simulations
+    function simulateClassSeatSwap() {
+      const s1 = campusState.students.find(s => s.id === 'stu-1');
+      const s2 = campusState.students.find(s => s.id === 'stu-2');
+      if (s1 && s2) {
+        const tmp = s1.detectedDesk;
+        s1.detectedDesk = s2.detectedDesk;
+        s2.detectedDesk = tmp;
+        s1.isSeatSwapped = (s1.assignedDesk !== s1.detectedDesk);
+        s2.isSeatSwapped = (s2.assignedDesk !== s2.detectedDesk);
+
+        triggerToast('success', 'Seat Swap Detected & Auto-Resolved', `${s1.name} and ${s2.name} swapped desks. Facial vector biometrics confirmed identity.`);
+        renderAll();
+      }
+    }
+
+    function simulatePhotoProxySpoof() {
+      const s3 = campusState.students.find(s => s.id === 'stu-3');
+      if (s3) {
+        s3.isProxy = true;
+        s3.status = 'proxy';
+        s3.faceConfidence = 42.1;
+
+        const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        campusState.outbox.unshift({
+          id: 'msg-proxy-' + Date.now(),
+          channel: 'ALERT',
+          category: 'ProxyAlert',
+          timestamp: timeNow,
+          dept: 'CSE',
+          classId: campusState.selectedClassId,
+          recipientType: 'Chief Proctor',
+          recipientName: 'Dean of Student Affairs',
+          contact: 'proctor.office@university.edu',
+          reason: 'Photo Proxy Attempt',
+          subject: `CRITICAL: Photo Proxy Blocked at ${s3.detectedDesk}`,
+          message: `2D Screen Reflection and static blink rate identified at ${s3.detectedDesk}. Spoof attempt using photo of ${s3.name} (${s3.rollNo}). Attendance denied and incident reported.`,
+          status: 'DISPATCHED',
+          payloadHash: 'SHA256:09fe82...ab34'
+        });
+
+        triggerToast('error', 'Fraudulent Proxy Blocked!', `Photo spoof attempt blocked at ${s3.detectedDesk}. Proctor notification dispatched.`);
+        renderAll();
+      }
+    }
+
+    function scanCurrentClassFaces() {
+      triggerToast('info', 'Classroom Biometric Scan', `Scanning all faces in ${campusState.selectedClassId}...`);
+      setTimeout(() => {
+        campusState.students.forEach(s => {
+          if (s.status === 'present' && !s.isProxy) {
+            s.faceConfidence = +(96 + Math.random() * 3.8).toFixed(1);
+          }
+        });
+        triggerToast('success', 'Biometric Scan Completed', 'All student faces confirmed. Zero false proxies issued.');
+        renderAll();
+      }, 600);
+    }
+
+    function runEntranceScanSingleClass() {
+      triggerToast('success', 'First 10M Scan Executed', `Classroom ${campusState.selectedClassId} marked present students.`);
+      renderAll();
+    }
+
+    function runDepartureSweepSingleClass() {
+      triggerToast('success', 'Last 10M Sweep Completed', `Classroom ${campusState.selectedClassId} verified continuous student retention.`);
+      renderAll();
+    }
+
+    function simulateFacultyNoShowSingleClass() {
+      const cls = campusState.classrooms[campusState.selectedClassId];
+      const dept = campusState.departments.find(d => d.id === cls.deptId);
+      cls.facultyCheckedIn = false;
+
+      const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      campusState.outbox.unshift({
+        id: 'msg-fac-' + Date.now(),
+        channel: 'SMS',
+        category: 'HOD',
+        timestamp: timeNow,
+        dept: dept.id,
+        classId: cls.id,
+        recipientType: 'HOD',
+        recipientName: dept.hod.name,
+        contact: dept.hod.phone,
+        reason: 'Faculty 10-Min No-Show',
+        subject: `URGENT: Faculty Absence in ${cls.room}`,
+        message: `TechVanta Automated Escalation: Faculty ${cls.currentFaculty} has NOT arrived within the first 10 minutes for ${cls.activeSubject} in ${cls.room}. ${cls.presentCount} students waiting. Please assign substitute.`,
+        status: 'DELIVERED',
+        payloadHash: 'SHA256:77bc90...eef1'
+      });
+
+      triggerToast('error', `Faculty No-Show Alert Sent to HOD`, `Urgent SMS & Email dispatched to ${dept.hod.name} (${dept.hod.phone}).`);
+      renderAll();
+    }
+
+    // Global Campus Simulations
+    function runCampusWideScan() {
+      triggerToast('info', 'Initiating Campus-Wide First 10M Scan', 'Scanning RTSP CCTV streams across all 11 classrooms...');
+      setTimeout(() => {
+        Object.values(campusState.classrooms).forEach(c => {
+          c.firstScanDone = true;
+        });
+        triggerToast('success', 'Campus-Wide First 10M Scan Completed', '422 students verified across 6 departments. Absence alerts queued.');
+        renderAll();
+      }, 700);
+    }
+
+    function runCampusWideSweep() {
+      triggerToast('info', 'Initiating Campus-Wide Last 10M Sweep', 'Re-verifying continuous presence across all college classrooms...');
+      setTimeout(() => {
+        Object.values(campusState.classrooms).forEach(c => {
+          c.sweepDone = true;
+        });
+        triggerToast('success', 'Campus-Wide Last 10M Sweep Completed', 'All sections verified with 94.2% overall classroom retention.');
+        renderAll();
+      }, 700);
+    }
+
+    function simulateCampusFacultyNoShow() {
+      // Trigger faculty no show on IT-B
+      const cls = campusState.classrooms['IT-B'];
+      const dept = campusState.departments.find(d => d.id === 'IT');
+      cls.facultyCheckedIn = false;
+
+      const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      campusState.outbox.unshift({
+        id: 'msg-camp-fac-' + Date.now(),
+        channel: 'SMS',
+        category: 'HOD',
+        timestamp: timeNow,
+        dept: 'IT',
+        classId: 'IT-B',
+        recipientType: 'HOD',
+        recipientName: dept.hod.name,
+        contact: dept.hod.phone,
+        reason: 'Campus Faculty Escalation',
+        subject: `CRITICAL: IT-B Class Unattended (${cls.room})`,
+        message: `Automated Campus Escalation: Assigned instructor failed to check in for IT8304 in ${cls.room}. Dispatched to HOD ${dept.hod.name} and Dean Office.`,
+        status: 'DELIVERED',
+        payloadHash: 'SHA256:ee8812...01ba'
+      });
+
+      triggerToast('error', 'Campus Alert: Faculty No-Show Dispatched', `Escalated directly to ${dept.hod.name} (${dept.hod.phone}).`);
+      renderAll();
+    }
+
+    // Student Roster Handlers
+    function handleRosterSearch(val) {
+      campusState.rosterSearch = val.toLowerCase().trim();
+      renderRosterTable();
+    }
+
+    function handleRosterFilterChange(val) {
+      campusState.rosterStatusFilter = val;
+      renderRosterTable();
+    }
+
+    function renderRosterTable() {
+      const tbody = document.getElementById('student-roster-body');
+      const countLabel = document.getElementById('roster-count-label');
+
+      const filtered = campusState.students.filter(s => {
+        if (campusState.rosterStatusFilter === 'present' && s.status !== 'present') return false;
+        if (campusState.rosterStatusFilter === 'shuffled' && (!s.isSeatSwapped || s.status !== 'present')) return false;
+        if (campusState.rosterStatusFilter === 'proxy' && !s.isProxy) return false;
+        if (campusState.rosterStatusFilter === 'low' && s.overallAttendance >= 75) return false;
+        if (campusState.rosterStatusFilter === 'absent' && s.status !== 'absent') return false;
+
+        if (campusState.rosterSearch) {
+          const match = s.name.toLowerCase().includes(campusState.rosterSearch) ||
+                        s.rollNo.toLowerCase().includes(campusState.rosterSearch) ||
+                        s.assignedDesk.toLowerCase().includes(campusState.rosterSearch) ||
+                        s.detectedDesk.toLowerCase().includes(campusState.rosterSearch);
+          if (!match) return false;
+        }
+
+        return true;
+      });
+
+      countLabel.innerText = `(${filtered.length} of ${campusState.students.length} students)`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-10 text-center text-slate-500 font-mono">No students match current filter criteria.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(s => {
+        const isPresent = s.status === 'present';
+        const isAbsent = s.status === 'absent';
+        const isProxy = s.isProxy;
+        const isSwapped = s.isSeatSwapped && isPresent;
+        const isLow = s.overallAttendance < 75;
+
+        let statusBadge = '';
+        if (isProxy) {
+          statusBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-red-950 border border-red-700 text-red-300 font-bold text-[10px] animate-pulse"><i data-lucide="shield-alert" class="w-3 h-3 text-red-400"></i> Proxy Spoof</span>';
+        } else if (isSwapped) {
+          statusBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-purple-950 border border-purple-700 text-purple-300 font-bold text-[10px]"><i data-lucide="shuffle" class="w-3 h-3 text-purple-400"></i> Seat Swapped (Resolved)</span>';
+        } else if (isPresent) {
+          statusBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-950 border border-emerald-800 text-emerald-300 text-[10px] font-medium"><i data-lucide="check-circle" class="w-3 h-3 text-emerald-400"></i> Face Verified</span>';
+        } else if (isAbsent) {
+          statusBadge = '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-slate-400 text-[10px]"><i data-lucide="x-circle" class="w-3 h-3 text-red-400"></i> Absent</span>';
+        }
+
+        return `
+          <tr class="hover:bg-slate-900/60 transition-colors ${isProxy ? 'bg-red-950/20' : isSwapped ? 'bg-purple-950/10' : ''}">
+            <td class="py-3 px-4">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${s.avatarBg}">
+                  ${s.name.charAt(0)}
+                </div>
+                <div>
+                  <div class="font-medium text-slate-100">${s.name}</div>
+                  <div class="text-[10px] text-slate-400">Parent: ${s.parentName}</div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-4 font-mono text-slate-300 font-medium">${s.rollNo}</td>
+            <td class="py-3 px-4 font-mono text-slate-400">${s.assignedDesk}</td>
+            <td class="py-3 px-4 font-mono">
+              <span class="${isSwapped ? 'text-purple-300 font-bold' : isAbsent ? 'text-slate-500' : 'text-emerald-300'}">
+                ${s.detectedDesk}
+              </span>
+              ${isSwapped ? '<span class="ml-1 text-[9px] px-1 py-0.2 rounded bg-purple-950 text-purple-300 border border-purple-800">&ne; Assigned</span>' : ''}
+            </td>
+            <td class="py-3 px-4">
+              <div class="w-24">
+                <div class="flex items-center justify-between text-[10px] font-mono mb-1">
+                  <span class="${isProxy ? 'text-red-400 font-bold' : 'text-slate-300'}">${s.faceConfidence > 0 ? s.faceConfidence.toFixed(1) + '%' : '—'}</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div class="h-full rounded-full ${isProxy ? 'bg-red-500' : isSwapped ? 'bg-purple-500' : 'bg-emerald-500'}" style="width: ${s.faceConfidence}%"></div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-4">${statusBadge}</td>
+            <td class="py-3 px-4 font-mono">
+              <span class="${isLow ? 'text-red-400 font-bold' : 'text-slate-200'}">${s.overallAttendance}%</span>
+              ${isLow ? '<span class="ml-1 text-[9px] px-1 py-0.2 rounded bg-red-950 text-red-300 border border-red-800">&lt;75%</span>' : ''}
+            </td>
+            <td class="py-3 px-4 text-right">
+              <button onclick="sendParentDirectAlert('${s.id}')" class="p-1.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/60 transition-colors cursor-pointer" title="Send SMS alert to parent">
+                <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function sendParentDirectAlert(studentId) {
+      const s = campusState.students.find(x => x.id === studentId);
+      if (!s) return;
+      const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      campusState.outbox.unshift({
+        id: 'msg-direct-' + Date.now(),
+        channel: 'SMS',
+        category: 'Parent',
+        timestamp: timeNow,
+        dept: 'CSE',
+        classId: campusState.selectedClassId,
+        recipientType: 'Parent',
+        recipientName: s.parentName,
+        contact: s.parentPhone,
+        reason: 'Direct Attendance Ping',
+        subject: `Period Attendance Status: ${s.name}`,
+        message: `TechVanta Automated Update: ${s.name} (${s.rollNo}) is currently marked ${s.status.toUpperCase()} in ${campusState.classrooms[campusState.selectedClassId].room}. Face confidence: ${s.faceConfidence.toFixed(1)}%.`,
+        status: 'DELIVERED',
+        payloadHash: 'SHA256:33ab12...99ee'
+      });
+
+      triggerToast('success', `Direct SMS Sent to ${s.parentName}`, `Notification dispatched to ${s.parentPhone}.`);
+      renderAll();
+    }
+
+    // Campus Outbox Ledger
+    function filterOutbox(filter) {
+      campusState.outboxFilter = filter;
+      ['all', 'HOD', 'Parent', 'ShuffleAudit', 'ProxyAlert'].forEach(f => {
+        const btn = document.getElementById(`outbox-filter-${f}`);
+        if (!btn) return;
+        if (f === filter) {
+          btn.className = 'px-2.5 py-1 rounded-lg font-medium transition-colors bg-red-600 text-white cursor-pointer';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition-colors cursor-pointer';
+        }
+      });
+      renderCampusOutbox();
+    }
+
+    function renderCampusOutbox() {
+      const tbody = document.getElementById('campus-outbox-tbody');
+      document.getElementById('count-outbox-all').innerText = campusState.outbox.length;
+
+      const filtered = campusState.outbox.filter(item => {
+        if (campusState.outboxFilter === 'all') return true;
+        return item.category === campusState.outboxFilter;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-500 font-mono">No campus alerts match current category.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(msg => {
+        let channelBadge = '<span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px]">SMS</span>';
+        if (msg.channel === 'EMAIL') {
+          channelBadge = '<span class="px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 text-[10px]">EMAIL</span>';
+        } else if (msg.channel === 'AUDIT') {
+          channelBadge = '<span class="px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800 text-[10px]">AUDIT</span>';
+        } else if (msg.channel === 'ALERT') {
+          channelBadge = '<span class="px-2 py-0.5 rounded bg-red-950 text-red-300 border border-red-800 text-[10px]">FRAUD ALERT</span>';
+        }
+
+        return `
+          <tr class="hover:bg-slate-900/60 transition-colors">
+            <td class="py-2.5 px-4">
+              <div class="flex items-center gap-2">
+                ${channelBadge}
+                <span class="text-slate-400 text-[10px]">${msg.timestamp}</span>
+              </div>
+            </td>
+            <td class="py-2.5 px-4">
+              <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 font-bold text-slate-200 text-[10px]">${msg.dept}</span>
+              <span class="text-slate-400 text-[10px] ml-1 font-mono">${msg.classId}</span>
+            </td>
+            <td class="py-2.5 px-4">
+              <div class="font-bold text-slate-200">${msg.recipientName}</div>
+              <div class="text-[10px] text-slate-500 truncate max-w-[140px]">${msg.contact}</div>
+            </td>
+            <td class="py-2.5 px-4 font-semibold text-slate-300">${msg.reason}</td>
+            <td class="py-2.5 px-4 max-w-xs">
+              <div class="font-medium text-slate-200 truncate">${msg.subject}</div>
+              <div class="text-[10px] text-slate-400 truncate">${msg.message}</div>
+            </td>
+            <td class="py-2.5 px-4">
+              <span class="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-bold">
+                <i data-lucide="check" class="w-3 h-3"></i> ${msg.status}
+              </span>
+            </td>
+            <td class="py-2.5 px-4 text-right">
+              <button onclick="inspectOutboxPayload('${msg.id}')" class="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer" title="Inspect Full Payload">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function inspectOutboxPayload(id) {
+      const msg = campusState.outbox.find(m => m.id === id);
+      if (!msg) return;
+
+      document.getElementById('modal-title').innerText = `${msg.channel} Dispatch Payload • ${msg.status}`;
+      document.getElementById('modal-content').innerHTML = `
+        <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
+          <div class="flex justify-between text-slate-400">
+            <span>Recipient:</span>
+            <strong class="text-white">${msg.recipientName} (${msg.recipientType})</strong>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Destination:</span>
+            <span class="text-slate-300 font-mono">${msg.contact}</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Department & Class:</span>
+            <span class="text-red-400 font-mono font-bold">${msg.dept} / ${msg.classId}</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Time Sent:</span>
+            <span class="text-slate-300 font-mono">${msg.timestamp}</span>
+          </div>
+          <div class="flex justify-between text-slate-400">
+            <span>Payload Hash:</span>
+            <span class="text-slate-500 font-mono text-[10px]">${msg.payloadHash}</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 font-medium mb-1">Subject Header:</label>
+          <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-white font-semibold">${msg.subject}</div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 font-medium mb-1">Delivered Message Content:</label>
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 leading-relaxed font-mono text-[11px]">${msg.message}</div>
+        </div>
+      `;
+
+      document.getElementById('outbox-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeOutboxModal() {
+      document.getElementById('outbox-modal').classList.add('hidden');
+    }
+
+    // Modal: Add Student Enrollment
+    function openAddStudentModal() {
+      document.getElementById('add-student-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeAddStudentModal() {
+      document.getElementById('add-student-modal').classList.add('hidden');
+    }
+
+    function handleEnrollStudent(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-stu-name').value;
+      const roll = document.getElementById('new-stu-roll').value;
+      const classId = document.getElementById('new-stu-class').value;
+      const desk = document.getElementById('new-stu-desk').value;
+      const phone = document.getElementById('new-stu-phone').value;
+      const parent = document.getElementById('new-stu-parent').value;
+
+      const newStudent = {
+        id: 'stu-' + (campusState.students.length + 1),
+        name: name,
+        rollNo: roll,
+        classId: classId,
+        assignedDesk: desk,
+        detectedDesk: desk,
+        faceConfidence: 98.6,
+        status: 'present',
+        isSeatSwapped: false,
+        isProxy: false,
+        overallAttendance: 100.0,
+        parentName: parent,
+        parentPhone: phone,
+        avatarBg: 'bg-emerald-900 text-emerald-200'
+      };
+
+      campusState.students.unshift(newStudent);
+      closeAddStudentModal();
+      triggerToast('success', `Enrolled ${name}`, `Registered in ${classId} with desk ${desk}.`);
+      renderAll();
+    }
+
+    // Toast Notification Dispatcher
+    function triggerToast(type, title, message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      let borderClass = 'border-slate-700 bg-slate-900 text-slate-100';
+      let iconName = 'info';
+
+      if (type === 'success') {
+        borderClass = 'border-emerald-600/80 bg-slate-950 text-emerald-300';
+        iconName = 'check-circle-2';
+      } else if (type === 'error') {
+        borderClass = 'border-red-600/80 bg-slate-950 text-red-300';
+        iconName = 'alert-triangle';
+      } else if (type === 'warning') {
+        borderClass = 'border-amber-600/80 bg-slate-950 text-amber-300';
+        iconName = 'alert-circle';
+      }
+
+      toast.className = `p-3.5 rounded-xl border ${borderClass} shadow-2xl backdrop-blur-md pointer-events-auto transition-all duration-300 flex items-start gap-3 transform translate-y-2 opacity-0`;
+      toast.innerHTML = `
+        <i data-lucide="${iconName}" class="w-5 h-5 shrink-0 mt-0.5"></i>
+        <div class="flex-1">
+          <div class="font-bold text-xs text-white">${title}</div>
+          <div class="text-[11px] text-slate-300 mt-0.5 leading-snug">${message}</div>
+        </div>
+      `;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 4200);
+    }
+
+    // Theme Toggle
+    function toggleTheme() {
+      campusState.darkMode = !campusState.darkMode;
+      const html = document.documentElement;
+      const icon = document.getElementById('theme-icon');
+
+      if (campusState.darkMode) {
+        html.classList.add('dark');
+        icon.setAttribute('data-lucide', 'sun');
+      } else {
+        html.classList.remove('dark');
+        icon.setAttribute('data-lucide', 'moon');
+      }
+      lucide.createIcons();
+    }
+  </script>
+</body>
+</html>

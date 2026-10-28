@@ -1,0 +1,6 @@
+{
+  "name": "TechVanta - Smart AI Attendance System",
+  "description": "AI-powered smart attendance and classroom monitoring system with live facial recognition simulator, proxy anomaly detection, and automated parent alerts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
